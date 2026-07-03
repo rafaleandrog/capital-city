@@ -13,6 +13,25 @@ const TABS = [
   { id: "cronicas", icon: "📜", label: "Crônicas" },
 ];
 
+const TOAST_COLOR = { green: "#3fb950", red: "#f85149", blue: "#58a6ff", orange: "#d29922" };
+
+function Toasts() {
+  const toasts = useGameStore((s) => s.toasts);
+  return (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-xs">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className="cc-panel px-3 py-2 text-xs text-[var(--parchment)]"
+          style={{ borderColor: TOAST_COLOR[t.color] || TOAST_COLOR.green }}
+        >
+          {t.label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function App() {
   const initGame = useGameStore((s) => s.initGame);
   const [tab, setTab] = useState("mapa");
@@ -60,6 +79,8 @@ export default function App() {
             </div>
           </div>
         )}
+
+        <Toasts />
       </div>
     </div>
   );

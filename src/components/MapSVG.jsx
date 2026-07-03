@@ -127,6 +127,8 @@ export default function MapSVG() {
   const auctions = useGameStore((s) => s.auctions);
   const selectedLotId = useGameStore((s) => s.selectedLotId);
   const selectLot = useGameStore((s) => s.selectLot);
+  const highlightLotIds = useGameStore((s) => s.highlightLotIds);
+  const highlightSet = useMemo(() => new Set(highlightLotIds), [highlightLotIds]);
 
   // relógio local de 1s só para o countdown de obras
   const hasWorks = Object.values(buildings).some((b) => b.upgradeEta !== null);
@@ -184,7 +186,7 @@ export default function MapSVG() {
             return (
               <rect
                 key={lot.id}
-                className="cc-lot"
+                className={`cc-lot${highlightSet.has(lot.id) ? " cc-lot-highlight" : ""}`}
                 x={r.x + 1.5}
                 y={r.y + 1.5}
                 width={r.w - 3}

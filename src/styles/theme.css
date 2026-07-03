@@ -146,6 +146,12 @@ body {
   filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.9));
 }
 
+.cc-lot-highlight {
+  stroke: #fde047;
+  stroke-width: 2.5px;
+  filter: brightness(1.6);
+}
+
 @keyframes cc-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
