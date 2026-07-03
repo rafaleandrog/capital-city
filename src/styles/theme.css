@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Tokens visuais ─────────────────────────────────────────────── */
+:root {
+  --cc-bg: #0d1117;
+  --cc-panel: #161b22;
+  --cc-border: #2d333b;
+  --cc-text: #e6edf3;
+  --cc-text-dim: #8b949e;
+  --cc-gold: #d4a94e;
+  --cc-green: #3fb950;
+  --cc-red: #f85149;
+  --cc-blue: #58a6ff;
+  --cc-orange: #d29922;
+}
+
+body {
+  background: var(--cc-bg);
+  color: var(--cc-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
