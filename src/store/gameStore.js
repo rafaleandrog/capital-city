@@ -4,24 +4,25 @@ import { tick as worldTick } from "../engine/worldTick.js";
 import { generateLots } from "../data/mapData.js";
 import { BUILDING_TYPES } from "../data/buildingTypes.js";
 
-const SAVE_KEY = "capital-city-save-v1";
+const SAVE_KEY = "capitalCity_v1";
 
 // timers vivem fora do estado (não são serializáveis)
 let tickTimer = null;
 let auctionTimers = {}; // { [auctionId]: { bot, end } }
 let toastSeq = 0;
+let initialized = false; // evita confirm duplo no StrictMode
 
 const BOTS_INIT = [
-  { id: "bot0", name: "Vetra Corp",      color: "#e0653a", money: 10000, people: 20 },
-  { id: "bot1", name: "Grupo Meridiano", color: "#8a63d2", money: 10000, people: 20 },
-  { id: "bot2", name: "Áurea Invest",    color: "#2f9e77", money: 10000, people: 20 },
+  { id: "bot0", name: "Grupo Andrade",   color: "#f472b6", money: 8000, people: 15 },
+  { id: "bot1", name: "Holding Verne",   color: "#a78bfa", money: 8000, people: 15 },
+  { id: "bot2", name: "Consórcio Otero", color: "#2dd4bf", money: 8000, people: 15 },
 ];
 
 export const OWNER_LABEL = {
   player: "Você",
-  bot0: "Vetra Corp",
-  bot1: "Grupo Meridiano",
-  bot2: "Áurea Invest",
+  bot0: "Grupo Andrade",
+  bot1: "Holding Verne",
+  bot2: "Consórcio Otero",
 };
 
 // renda esperada por tick, SEM o ruído aleatório — para exibição na UI.
@@ -86,16 +87,27 @@ function freshState() {
   };
 }
 
+// snapshot para o save. Leilões em andamento e evento ativo NÃO são
+// salvos — o escrow de lances ativos é devolvido no snapshot para o
+// dinheiro não sumir ao recarregar.
 function pickSave(s) {
+  let money = s.money;
+  const botEscrow = {};
+  for (const a of Object.values(s.auctions)) {
+    if (a.status !== "active" || !a.leadPlayer) continue;
+    if (a.leadPlayer === "player") money += a.currentBid;
+    else botEscrow[a.leadPlayer] = (botEscrow[a.leadPlayer] || 0) + a.currentBid;
+  }
+  const bots = s.bots.map((b) =>
+    botEscrow[b.id] ? { ...b, money: b.money + botEscrow[b.id] } : b
+  );
   const {
-    money, people, peopleCap, worldPop, macro, tick, devMode,
-    lots, buildings, auctions, bots, events, activeEvent,
-    nextEventTick, selectedLotId, macroHistory, incomeHist,
+    people, peopleCap, worldPop, macro, tick, devMode,
+    lots, buildings, events, nextEventTick, macroHistory, incomeHist,
   } = s;
   return {
     money, people, peopleCap, worldPop, macro, tick, devMode,
-    lots, buildings, auctions, bots, events, activeEvent,
-    nextEventTick, selectedLotId, macroHistory, incomeHist,
+    lots, buildings, bots, events, nextEventTick, macroHistory, incomeHist,
   };
 }
 
@@ -369,12 +381,10 @@ export const useGameStore = create((set, get) => ({
     const s = get();
     const a = s.auctions[auctionId];
     if (!a || a.status !== "active" || Date.now() >= a.expiresAt) return;
-    const lot = s.lots[a.lotId];
     const nextBid = Math.ceil(a.currentBid * (1 + engine.AUCTION_MIN_RAISE));
-    const value = engine.lotValue(lot, s);
-    // bots pagam até ~1.8× o valor de mercado
+    // bot entra se não é o lead e o lance atual cabe em 40% do caixa dele
     const candidates = s.bots.filter(
-      (b) => b.id !== a.leadPlayer && b.money >= nextBid && nextBid <= value * 1.8
+      (b) => b.id !== a.leadPlayer && b.money >= nextBid && a.currentBid < b.money * 0.4
     );
     if (candidates.length && Math.random() < 0.85) {
       const bot = candidates[Math.floor(Math.random() * candidates.length)];
@@ -445,7 +455,7 @@ export const useGameStore = create((set, get) => ({
       return;
     }
     const timers = {};
-    const botDelay = 3000 + Math.random() * 5000; // bot age em 3–8s
+    const botDelay = 3000 + Math.random() * 7000; // bot age em 3–10s
     if (botDelay < remaining) {
       timers.bot = setTimeout(() => get()._botBid(auctionId), botDelay);
     }
@@ -463,14 +473,16 @@ export const useGameStore = create((set, get) => ({
   // ─── toasts ───────────────────────────────────────────────────────
   addToast(label, color = "green") {
     const id = `t${++toastSeq}`;
-    set((s) => ({ toasts: [...s.toasts, { id, label, color }].slice(-4) }));
+    set((s) => ({ toasts: [...s.toasts, { id, label, color }].slice(-3) })); // stack máx 3
     setTimeout(() => {
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
-    }, 4500);
+    }, 4000);
   },
 
   // ─── loop / ciclo de vida ─────────────────────────────────────────
   runTick() {
+    const prevEvent = get().activeEvent;
+    const prevMoney = get().money;
     // fecha leilões vencidos ANTES do worldTick (o dinheiro já está em
     // escrow; o passo 7 do worldTick só processa leilões ainda ativos)
     get()._finalizeExpiredAuctions();
@@ -490,7 +502,31 @@ export const useGameStore = create((set, get) => ({
       incomeHist[b.id] = [...prev, est].slice(-5);
     }
     set({ macroHistory, incomeHist });
-    get().saveGame();
+
+    // transições de evento mundial → toast + registro de fim nas crônicas
+    if (s.activeEvent && s.activeEvent.id !== prevEvent?.id) {
+      const dur = s.activeEvent.endsAtTick - s.activeEvent.startTick;
+      get().addToast(`${s.activeEvent.label} — ${dur} ticks`, s.activeEvent.color);
+    }
+    if (prevEvent && s.activeEvent?.id !== prevEvent.id) {
+      set((st) => ({
+        events: [
+          ...st.events,
+          {
+            id: `${prevEvent.id}-end`,
+            type: prevEvent.type,
+            label: `${prevEvent.label} — encerrado`,
+            color: "gray",
+            at: Date.now(),
+            endsAt: null,
+          },
+        ].slice(-50),
+      }));
+    }
+    if (prevMoney >= 0 && s.money < 0) get().addToast("⚠️ Saldo negativo!", "red");
+
+    // autosave a cada 5 ticks
+    if (s.tick % 5 === 0) get().saveGame();
   },
 
   toggleDevMode() {
@@ -517,7 +553,16 @@ export const useGameStore = create((set, get) => ({
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return false;
-      set({ ...JSON.parse(raw), buildPlan: null, highlightLotIds: [], toasts: [] });
+      // leilões e evento ativo NÃO são restaurados (resetam ao carregar)
+      set({
+        ...JSON.parse(raw),
+        auctions: {},
+        activeEvent: null,
+        selectedLotId: null,
+        buildPlan: null,
+        highlightLotIds: [],
+        toasts: [],
+      });
       return true;
     } catch {
       return false;
@@ -525,6 +570,9 @@ export const useGameStore = create((set, get) => ({
   },
 
   resetGame() {
+    if (typeof window !== "undefined" && !window.confirm("Reiniciar o jogo? O progresso salvo será apagado.")) {
+      return;
+    }
     try {
       localStorage.removeItem(SAVE_KEY);
     } catch {
@@ -533,14 +581,25 @@ export const useGameStore = create((set, get) => ({
     for (const id of Object.keys(auctionTimers)) clearAuctionTimers(id);
     set(freshState());
     get()._restartTimer();
+    get().addToast("Novo jogo iniciado", "green");
   },
 
   initGame() {
-    get().loadGame();
-    get()._restartTimer();
-    // re-arma leilões que estavam ativos no save
-    for (const a of Object.values(get().auctions)) {
-      if (a.status === "active") get()._armAuction(a.id);
+    if (initialized) {
+      get()._restartTimer();
+      return;
     }
+    initialized = true;
+    let hasSave = false;
+    try {
+      hasSave = !!localStorage.getItem(SAVE_KEY);
+    } catch {
+      /* ok */
+    }
+    if (hasSave && window.confirm("Continuar partida salva?")) {
+      get().loadGame();
+    }
+    // se recusou, segue no estado inicial; o autosave sobrescreve o save antigo
+    get()._restartTimer();
   },
 }));

@@ -1,4 +1,5 @@
 import { useGameStore } from "../store/gameStore.js";
+import { fmtMoney } from "./format.js";
 import * as engine from "../engine/engine.js";
 import AuctionPanel from "./AuctionPanel.jsx";
 import EventFeed from "./EventFeed.jsx";
@@ -51,7 +52,7 @@ export default function RightPanel() {
                   VOCÊ
                 </span>
               )}
-              <span className="font-num text-[var(--parchment)]">💰 {fmt.format(Math.round(p.worth))}</span>
+              <span className="font-num text-[var(--parchment)]">💰 {fmtMoney(p.worth)}</span>
             </div>
           ))}
         </div>

@@ -159,3 +159,24 @@ body {
 .cc-pulse {
   animation: cc-pulse 1.2s ease-in-out infinite;
 }
+
+/* toast: fade in → visível → fade out (sincronizado com os 4s do store) */
+@keyframes cc-toast {
+  0% { opacity: 0; transform: translateY(8px); }
+  6% { opacity: 1; transform: translateY(0); }
+  88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.cc-toast {
+  animation: cc-toast 4s ease both;
+}
+
+/* flash breve quando a renda/tick muda de sinal */
+@keyframes cc-flash {
+  0% { background: rgba(234, 179, 8, 0.55); }
+  100% { background: transparent; }
+}
+.cc-flash {
+  animation: cc-flash 0.7s ease-out;
+  border-radius: 2px;
+}

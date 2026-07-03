@@ -4,13 +4,7 @@ import { BUILDING_LABELS } from "../data/buildingTypes.js";
 import { BUILDING_ICON } from "./MapSVG.jsx";
 import { useNow } from "./useNow.js";
 
-const fmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
-
-function fmtPop(n) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return fmt.format(n);
-}
+import { fmtMoney, fmtPop, fmtExact as fmt } from "./format.js";
 
 const EVENT_COLOR = { green: "#3fb950", red: "#f85149", blue: "#58a6ff", orange: "#d29922", gray: "#8b949e" };
 
@@ -179,7 +173,7 @@ export default function LeftPanel() {
             )}
             <div className="flex justify-between">
               <span>Total de ativos</span>
-              <span className="font-num text-[var(--gold-300)]">💰 {fmt.format(totalAssets)}</span>
+              <span className="font-num text-[var(--gold-300)]">💰 {fmtMoney(totalAssets)}</span>
             </div>
           </div>
         </div>

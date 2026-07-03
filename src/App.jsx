@@ -22,7 +22,7 @@ function Toasts() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="cc-panel px-3 py-2 text-xs text-[var(--parchment)]"
+          className="cc-panel cc-toast px-3 py-2 text-xs text-[var(--parchment)]"
           style={{ borderColor: TOAST_COLOR[t.color] || TOAST_COLOR.green }}
         >
           {t.label}
