@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Tokens visuais ─────────────────────────────────────────────── */
+:root {
+  --stone-900: #1c1917;      /* background da página (pedra escura) */
+  --stone-800: #292524;      /* painéis internos */
+  --stone-700: #44403c;      /* bordas de painéis */
+  --gold-500: #eab308;       /* acentos dourados */
+  --gold-300: #fde047;       /* texto dourado claro */
+  --parchment: #fef3c7;      /* texto principal em painéis */
+  --parchment-dim: #d1a872;  /* texto secundário */
+  --ink: #0c0a09;            /* texto escuro sobre fundo claro */
+}
+
+body {
+  background-color: var(--stone-900);
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  color: var(--parchment);
+  font-family: "Crimson Text", ui-serif, Georgia, serif;
+}
+
+.font-display {
+  font-family: "Cinzel", ui-serif, Georgia, serif;
+}
+.font-num {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ─── Moldura estilo KingsAge (apenas CSS) ───────────────────────── */
+.cc-frame {
+  min-height: 100vh;
+  border: 12px solid transparent;
+  border-image: linear-gradient(135deg, #92400e, #eab308, #92400e, #eab308, #92400e) 1;
+  position: relative;
+}
+.cc-frame::before,
+.cc-frame::after,
+.cc-frame-inner::before,
+.cc-frame-inner::after {
+  content: "";
+  position: fixed;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #eab308, #92400e);
+  border: 1px solid #fde047;
+  z-index: 50;
+}
+.cc-frame::before { top: 0; left: 0; }
+.cc-frame::after { bottom: 0; right: 0; }
+.cc-frame-inner::before { top: 0; right: 0; }
+.cc-frame-inner::after { bottom: 0; left: 0; }
+
+/* ─── Painéis ────────────────────────────────────────────────────── */
+.cc-panel {
+  background: var(--stone-800);
+  border: 1px solid var(--gold-500);
+  border-radius: 4px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.cc-panel-header {
+  background: linear-gradient(#78350f, #451a03);
+  color: var(--gold-300);
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--gold-500);
+}
+
+/* ─── Botões ─────────────────────────────────────────────────────── */
+.cc-btn {
+  background: linear-gradient(#92400e, #7c2d12);
+  border: 1px solid var(--gold-500);
+  color: var(--gold-300);
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 5px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: filter 0.1s;
+}
+.cc-btn:hover { filter: brightness(1.2); }
+.cc-btn:active { transform: translateY(1px); }
+.cc-btn-secondary {
+  background: var(--stone-800);
+  border: 1px solid var(--stone-700);
+  color: var(--parchment-dim);
+}
+.cc-btn:disabled,
+.cc-btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+/* ─── Tabs de navegação ──────────────────────────────────────────── */
+.cc-tabs {
+  background: var(--stone-900);
+  display: flex;
+  gap: 2px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--stone-700);
+}
+.cc-tab {
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--parchment-dim);
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.cc-tab.active {
+  border-bottom: 2px solid var(--gold-500);
+  color: var(--gold-300);
+  background: var(--stone-800);
+}
+
+/* ─── Mapa SVG ───────────────────────────────────────────────────── */
+.cc-lot {
+  cursor: pointer;
+  transition: filter 0.08s;
+}
+.cc-lot:hover {
+  filter: brightness(1.5);
+}
+.cc-lot-selected {
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.9));
+}
+
+.cc-lot-highlight {
+  stroke: #fde047;
+  stroke-width: 2.5px;
+  filter: brightness(1.6);
+}
+
+@keyframes cc-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.cc-pulse {
+  animation: cc-pulse 1.2s ease-in-out infinite;
+}
+
+/* toast: fade in → visível → fade out (sincronizado com os 4s do store) */
+@keyframes cc-toast {
+  0% { opacity: 0; transform: translateY(8px); }
+  6% { opacity: 1; transform: translateY(0); }
+  88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.cc-toast {
+  animation: cc-toast 4s ease both;
+}
+
+/* flash breve quando a renda/tick muda de sinal */
+@keyframes cc-flash {
+  0% { background: rgba(234, 179, 8, 0.55); }
+  100% { background: transparent; }
+}
+.cc-flash {
+  animation: cc-flash 0.7s ease-out;
+  border-radius: 2px;
+}
